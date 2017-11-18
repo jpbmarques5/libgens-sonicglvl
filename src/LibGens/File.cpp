@@ -414,8 +414,7 @@ namespace LibGens {
 
 			// FIXME: Awful way to seek through the new type of Lost World header, needs to be done
 			// in a better way.
-			size_t max_section_scan = 32;
-			for (size_t i=0; i<max_section_scan; i++) {
+			while (true) {
 				unsigned short section_flag = 0;
 				unsigned short section_address = 0;
 				unsigned int section_value = 0;
