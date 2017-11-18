@@ -83,33 +83,38 @@ namespace LibGens {
 		for (list<VertexFormatElement>::iterator it=reference.begin(); it!=reference.end(); it++) {
 			file->goToAddress(header_address+(*it).getOffset());
 
-			switch ((*it).getID()) {
-				case POSITION :
+			switch ((*it).getID())
+			{
+				case POSITION:
 					if ((*it).getData() == VECTOR3) position.read(file);
 					break;
-				case BONE_WEIGHTS :
+				case BONE_WEIGHTS:
 					if ((*it).getData() == VECTOR4_CHAR) file->read(bone_weights, 4);
 					break;
-				case BONE_INDICES :
+				case BONE_INDICES:
 					if ((*it).getData() == INDICES) file->read(bone_indices, 4);
+					if ((*it).getData() == INDICESB) file->read(bone_indices, 4);
 					break;
-				case NORMAL :
+				case NORMAL:
 					if ((*it).getData() == VECTOR3) normal.read(file);
 					if ((*it).getData() == VECTOR3_360) normal.readNormal360(file);
+					if ((*it).getData() == VECTOR3_FORCES) normal.readNormalForces(file);
 					break;
-				case UV :
+				case UV:
 					if ((*it).getData() == VECTOR2) uv[(*it).getIndex()].read(file);
 					if ((*it).getData() == VECTOR2_HALF) uv[(*it).getIndex()].readHalf(file);
 					break;
-				case BINORMAL :
+				case BINORMAL:
 					if ((*it).getData() == VECTOR3) binormal.read(file);
 					if ((*it).getData() == VECTOR3_360) binormal.readNormal360(file);
+					if ((*it).getData() == VECTOR3_FORCES) binormal.readNormalForces(file);
 					break;
-				case TANGENT :
+				case TANGENT:
 					if ((*it).getData() == VECTOR3) tangent.read(file);
 					if ((*it).getData() == VECTOR3_360) tangent.readNormal360(file);
+					if ((*it).getData() == VECTOR3_FORCES) tangent.readNormalForces(file);
 					break;
-				case RGBA :
+				case RGBA:
 					if ((*it).getData() == VECTOR4) color.read(file, true);
 					if ((*it).getData() == VECTOR4_CHAR) color.readABGR8(file);
 					break;
@@ -117,14 +122,12 @@ namespace LibGens {
 		}
 	}
 
-
 	void Vertex::write(File *file, VertexFormat *vformat) {
 		writeElements(file, vformat);
 
 		file->goToEnd();
 	}
 
-	
 	void Vertex::writeElements(File *file, VertexFormat *vformat) {
 		size_t header_address=file->getCurrentAddress();
 		file->writeNull(vformat->getSize());

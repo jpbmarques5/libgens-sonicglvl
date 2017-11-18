@@ -108,6 +108,63 @@ namespace LibGens {
 		return lMaterial;
 	}
 
+	void FBX::addBone(FbxNode *parentNode, Matrix4 parentTransformation, unsigned int parentIndex, vector<FbxNode *> &skeletonBones, vector<Bone *> &bones)
+	{
+		for (int i = 0; i < bones.size(); i++)
+		{
+			Bone *bone = bones[i];
+			unsigned int pIndex = bone->getParentIndex();
+			Matrix4 matrix = bone->getMatrix();
+			string name = bone->getName();
+
+			if (pIndex != parentIndex)
+			{
+				continue;
+			}
+
+			FbxSkeleton *lSkeleton = FbxSkeleton::Create(scene, name.c_str());
+			if (parentIndex == -1)
+			{
+				lSkeleton->SetSkeletonType(FbxSkeleton::eRoot);
+			}
+
+			else
+			{
+				lSkeleton->SetSkeletonType(FbxSkeleton::eLimbNode);
+			}
+
+			FbxNode *lBoneNode = FbxNode::Create(scene, name.c_str());
+			lBoneNode->SetNodeAttribute(lSkeleton);
+
+			Matrix4 localMatrix = parentTransformation * matrix.inverse();
+
+			Vector3 pos, sca;
+			Quaternion ori;
+			localMatrix.decomposition(pos, sca, ori);
+
+			lBoneNode->LclTranslation.Set(FbxVector4(pos.x, pos.y, pos.z));
+
+			FbxVector4 eu;
+			eu.SetXYZ(FbxQuaternion(ori.x, ori.y, ori.z, ori.w));
+
+			lBoneNode->LclRotation.Set(eu);
+
+			skeletonBones[i] = lBoneNode;
+			parentNode->AddChild(lBoneNode);
+
+			addBone(lBoneNode, matrix, i, skeletonBones, bones);
+		}
+	}
+
+	vector<FbxNode *> FBX::addSkeleton(Model *model)
+	{
+		vector<FbxNode *> skeletonBones;
+		vector<Bone *> bones = model->getBones();
+
+		skeletonBones.resize(bones.size(), NULL);
+		addBone(scene->GetRootNode(), Matrix4(), -1, skeletonBones, bones);
+		return skeletonBones;
+	}
 
 	FbxNode *FBX::addHavokBone(FbxNode *parent_node, unsigned int parent_index, vector<FbxNode *> &skeleton_bones, hkaSkeleton *skeleton) {
 		FbxNode *root_bone=NULL;
@@ -552,6 +609,12 @@ namespace LibGens {
 					addHavokAnimation(skeleton_bones, havok_skeleton, havok_animation_binding, havok_animation);
 				}
 			}
+		}
+
+		else if (model && lMeshNode && model->getBones().size())
+		{
+			vector<FbxNode *> bones = addSkeleton(model);
+			skinModelToSkeleton(model, lMesh, bones, lMeshNode->EvaluateGlobalTransform());
 		}
 
 		return lMesh;

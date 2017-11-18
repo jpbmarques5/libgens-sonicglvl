@@ -123,6 +123,7 @@ namespace LibGens {
 
 			void read(File *file, bool big_endian=true);
 			void readNormal360(File *file, bool big_endian=true);
+			void readNormalForces(File *file, bool bigEndian = true);
 			void write(File *file, bool big_endian=true);
 
 			void readXML(TiXmlElement *root);

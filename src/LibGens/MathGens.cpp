@@ -390,6 +390,16 @@ namespace LibGens {
 		z = ((value&0x80000000 ? -1 : 0) + (float)((value>>23)&0x0FF) / 256.0f);
 	}
 
+	void Vector3::readNormalForces(File *file, bool bigEndian)
+	{
+		unsigned int value = 0;
+		file->readInt32E(&value, bigEndian);
+
+		x = ((value & 0x00000200 ? -1 : 0) + (float)((value) & 0x1FF) / 512.0f);
+		y = ((value & 0x00080000 ? -1 : 0) + (float)((value >> 10) & 0x1FF) / 512.0f);
+		z = ((value & 0x20000000 ? -1 : 0) + (float)((value >> 20) & 0x1FF) / 512.0f);
+	}
+
 	void Vector3::write(File *file, bool big_endian) {
 		if (big_endian) {
 			file->writeFloat32BE(&x);
