@@ -171,10 +171,10 @@ namespace LibGens {
 	void VertexFormat::fixForPC() {
 		size_t current_offset = 0;
 
-		for (list<VertexFormatElement>::iterator it=elements.begin(); it!=elements.end(); it++) {
+		for (list<VertexFormatElement>::iterator it = elements.begin(); it != elements.end(); it++) {
 			(*it).setOffset((*it).getOffset() + current_offset);
 
-			if ((*it).getData() == VECTOR3_360) {
+			if ((*it).getData() == VECTOR3_360 || (*it).getData() == VECTOR3_FORCES) {
 				(*it).setData(VECTOR3);
 				current_offset += 8;
 			}
@@ -188,12 +188,14 @@ namespace LibGens {
 				(*it).setData(VECTOR4);
 				current_offset += 12;
 			}
+
+			if ((*it).getData() == INDICESB) {
+				(*it).setData(INDICES);
+			}
 		}
 
 		size += current_offset;
 	}
-
-	
 
 	void Vertex::setParent(Submesh *v) {
 		parent = v;

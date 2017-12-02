@@ -74,6 +74,7 @@ namespace LibGens {
 			int getTextureUnitsSize();
 			void addTextureUnit(Texture *texture);
 			void addParameter(Parameter *parameter);
+			void removeTextureByUnit(string unit);
 			void setParameter(string parameter_name, Color color);
 			void setName(string v);
 			string getName();

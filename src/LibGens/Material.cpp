@@ -20,6 +20,7 @@
 #include "Material.h"
 #include "Parameter.h"
 #include "Texture.h"
+#include "MirageNode.h"
 
 namespace LibGens {
 	const string Material::LayerOpaq = "opaq";
@@ -84,6 +85,16 @@ namespace LibGens {
 		if (!file) {
 			Error::addMessage(Error::NULL_REFERENCE, LIBGENS_MATERIAL_ERROR_MESSAGE_NULL_FILE);
 			return;
+		}
+		
+		if (file->getRootNodeType() == LIBGENS_FILE_HEADER_ROOT_TYPE_NEXT_GEN) {
+			MirageNode *root_node = new MirageNode();
+			root_node->read(file);
+
+			MirageNode *data_node = root_node->find("Contexts", false);
+			file->goToAddress(data_node->getDataAddress());
+
+			delete root_node;
 		}
 
 		size_t header_address=file->getCurrentAddress();
@@ -310,6 +321,16 @@ namespace LibGens {
 
 	void Material::addParameter(Parameter *parameter) {
 		parameters.push_back(parameter);
+	}
+	
+	void Material::removeTextureByUnit(string unit) {
+		for (vector<Texture *>::iterator it = textures.begin(); it != textures.end(); it++) {
+			if ((*it)->getUnit() == unit) {
+				textures.erase(it);
+				delete (*it);
+				break;
+			}
+		}
 	}
 
 	void Material::setParameter(string parameter_name, Color color) {

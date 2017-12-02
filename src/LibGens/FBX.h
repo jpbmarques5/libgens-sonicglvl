@@ -28,6 +28,7 @@ class hkaAnimationBinding;
 class hkaAnimation;
 
 namespace LibGens {
+	class Mesh;
 	class Submesh;
 	class Bone;
 	class Model;
@@ -53,8 +54,8 @@ namespace LibGens {
 			FbxMesh *addNamedNode(string name, Model *model, HavokSkeletonCache *skeleton=NULL, HavokAnimationCache *animation=NULL, Matrix4 transform_matrix = Matrix4());
 			FbxMesh *addTerrainInstance(TerrainInstance *instance);
 
-			void skinModelToSkeleton(Model *model, FbxMesh *model_mesh, vector<FbxNode *> &skeleton_bones, FbxAMatrix lSkinMatrix);
-			void addBone(FbxNode *parentNode, Matrix4 parentTransformation, unsigned int parentIndex, vector<FbxNode *> &skeletonBones, vector<Bone *> &bones);
+			void skinModelToSkeleton(Model *model, Mesh *mesh, FbxMesh *model_mesh, vector<FbxNode *> &skeleton_bones, FbxAMatrix lSkinMatrix);
+			void addBone(FbxNode *parent_node, Matrix4 parent_transformation, unsigned int parent_index, vector<FbxNode *> &skeleton_bones, vector<Bone *> &bones);
 			vector<FbxNode *> addSkeleton(Model *model);
 			FbxNode *addHavokSkeleton(vector<FbxNode *> &skeleton_bones, hkaSkeleton *skeleton);
 			FbxNode *addHavokBone(FbxNode *parent_node, unsigned int parent_index, vector<FbxNode *> &skeleton_bones, hkaSkeleton *skeleton);

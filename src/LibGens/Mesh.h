@@ -35,6 +35,7 @@ namespace LibGens {
 			AABB aabb;
 			string extra;
 			string water_slot_string;
+			string name;
 		public:
 			Mesh();
 			Mesh(Mesh *clone, LibGens::Matrix4 transform, float uv2_left, float uv2_right, float uv2_top, float uv2_bottom);
@@ -47,6 +48,8 @@ namespace LibGens {
 			void setExtra(string v);
 			string getExtra();
 			bool hasExtra();
+			string getName();
+			void setName(string v);
 			void addSubmesh(Submesh *submesh, size_t slot);
 			void removeSubmesh(Submesh *submesh, size_t slot);
 			std::vector<Submesh *> getSubmeshes();

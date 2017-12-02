@@ -21,11 +21,18 @@
 #include "Mesh.h"
 #include "Model.h"
 #include "TerrainGroup.h"
+#include "MirageNode.h"
 
 namespace LibGens {
+	ModelProperty::ModelProperty(string name_p, unsigned int value_p) {
+		name = name_p;
+		value = value_p;
+	}
+	
 	Model::Model() {
 		meshes.clear();
 		bones.clear();
+		properties.clear();
 		name="";
 		filename="";
 		terrain_mode = false;
@@ -77,9 +84,9 @@ namespace LibGens {
 			case LIBGENS_MODEL_ROOT_DYNAMIC_GENERATIONS:
 				readRootNodeDynamicGenerations(file);
 				break;
-
+				
 			case LIBGENS_MODEL_ROOT_DYNAMIC_LOST_WORLD:
-				readRootNodeDynamicGenerations(file);
+				readRootNodeDynamicLostWorld(file);
 				break;
 		}
 	}
@@ -156,56 +163,38 @@ namespace LibGens {
 			buildAABB();
 		}
 	}
-
 	
 	void Model::readRootNodeDynamicLostWorld(File *file) {
-		/*
 		if (!file) {
 			Error::addMessage(Error::NULL_REFERENCE, LIBGENS_MODEL_ERROR_MESSAGE_NULL_FILE);
 			return;
 		}
 
-		size_t header_address=file->getCurrentAddress();
+		// Root Node
+		MirageNode *root_node = new MirageNode();
+		root_node->read(file);
 
-		// Read Meshes
-		unsigned int mesh_count=0;
-		size_t mesh_table_address=0;
-		size_t mesh_name_address=0;
-
-		
-		file->readInt32BE(&mesh_count);
-		file->readInt32BEA(&mesh_table_address);
-
-		if (terrain_mode) {
-			file->readInt32BEA(&mesh_name_address);
-			file->readInt32BE(&model_flag);
-
-			// Read Name
-			file->goToAddress(mesh_name_address);
-			file->readString(&name);
-		}
-		else {
-			readSkeleton(file);
+		// Parse Properties
+		MirageNode *properties_node = root_node->find("SCAParam");
+		if (properties_node) {
+			vector<MirageNode *> nodes = properties_node->getNodes();
+			for (vector<MirageNode *>::iterator it = nodes.begin(); it != nodes.end(); it++) {
+				properties.push_back(ModelProperty((*it)->getName(), (*it)->getValue()));
+			}
 		}
 
-		for (size_t i=0; i<mesh_count; i++) {
-			size_t mesh_address=0;
-			file->goToAddress(mesh_table_address + i*4);
-			file->readInt32BEA(&mesh_address);
-			file->goToAddress(mesh_address);
+		// Read Model
+		MirageNode *data_node = root_node->find("Contexts", false);
+		file->goToAddress(data_node->getDataAddress());
 
-			Mesh *mesh = new Mesh();
-			mesh->read(file);
-			mesh->buildAABB();
-			meshes.push_back(mesh);
+		switch (data_node->getValue()) {
+			case LIBGENS_MODEL_ROOT_DYNAMIC_GENERATIONS:
+				readRootNodeDynamicGenerations(file);
+				break;
 		}
 
-		if (terrain_mode) {
-			buildAABB();
-		}
-		*/
+		delete root_node;
 	}
-
 	
 	void Model::readSkeleton(File *file) {
 		if (!file) {
@@ -269,8 +258,13 @@ namespace LibGens {
 			case LIBGENS_MODEL_ROOT_DYNAMIC_GENERATIONS:
 				writeRootNodeDynamicGenerations(file);
 				break;
+				
 			case LIBGENS_MODEL_ROOT_DYNAMIC_UNLEASHED_2:
 				writeRootNodeDynamicUnleashed2(file);
+				break;
+				
+			case LIBGENS_MODEL_ROOT_DYNAMIC_LOST_WORLD:
+				writeRootNodeDynamicLostWorld(file);
 				break;
 		}
 	}
@@ -431,7 +425,31 @@ namespace LibGens {
 		file->goToEnd();
 	}
 
+	void Model::writeRootNodeDynamicLostWorld(File *file) {
+		if (!file) {
+			Error::addMessage(Error::NULL_REFERENCE, LIBGENS_MODEL_ERROR_MESSAGE_WRITE_NULL_FILE);
+			return;
+		}
 
+		// Root Node
+		MirageNode *root_node = new MirageNode("Model", 1);
+
+		// Properties
+		if (properties.size()) {
+			MirageNode *properties_node = root_node->newNode("NodesExt", 1)->newNode("NodePrms", 0)->newNode("SCAParam", 1);
+			for (vector<ModelProperty>::iterator it = properties.begin(); it != properties.end(); it++) {
+				properties_node->newNode((*it).name, (*it).value);
+			}
+		}
+
+		// Data Node
+		MirageNode *data_node = root_node->newNode("Contexts");
+		data_node->setData(this, LIBGENS_MODEL_ROOT_DYNAMIC_GENERATIONS);
+
+		// Write Root Node
+		root_node->write(file, true);
+		delete root_node;
+	}
 
 	list<Vertex *> Model::getVertexList() {
 		list<Vertex *> vertices;
@@ -477,6 +495,21 @@ namespace LibGens {
 			meshes.push_back(mesh);
 		}
 	}
+	
+	void Model::addBone(Bone *bone) {
+		bones.push_back(bone);
+	}
+	
+	void Model::setProperty(string name, unsigned int value) {
+		for (vector<ModelProperty>::iterator it = properties.begin(); it != properties.end(); it++) {
+			if ((*it).name == name) {
+				(*it).value = value;
+				return;
+			}
+		}
+		
+		properties.push_back(ModelProperty(name, value));
+	}
 
 	void Model::mergeModel(Model *model, LibGens::Matrix4 transform, float uv2_left, float uv2_right, float uv2_top, float uv2_bottom) {
 		vector<Mesh *> merge_meshes = model->getMeshes();
@@ -502,6 +535,7 @@ namespace LibGens {
 			delete (*it);
 		}
 		bones.clear();
+		properties.clear();
 	}
 
 	list<string> Model::getMaterialNames() {

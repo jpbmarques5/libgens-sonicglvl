@@ -27,6 +27,7 @@ namespace LibGens {
 		}
 		aabb.reset();
 		extra="";
+		name = "";
 	}
 
 	Mesh::~Mesh() {
@@ -133,6 +134,10 @@ namespace LibGens {
 				}
 			}
 		}
+		
+		// Read Name
+		file->goToAddress(header_address + LIBGENS_MODEL_SUBMESH_SLOTS * 8 + 8);
+		file->readString(&name);
 	}
 
 	void Mesh::write(File *file, bool unleashed2_mode) {		
@@ -156,13 +161,12 @@ namespace LibGens {
 					for (size_t i=0; i<12; i++) {
 						file->write(&filler, 1);
 					}
-					file->writeNull(4);
 				}
 				else {
 					unsigned int water_count=1;
 					file->writeInt32BE(&water_count);
 					water_slot_address = file->getCurrentAddress();
-					file->writeNull(16);
+					file->writeNull(12);
 				}
 			}
 			else {
@@ -171,8 +175,12 @@ namespace LibGens {
 			}
 		}
 
+        // Write Name
+        file->writeString(&name);
+		file->fixPadding();
+
 		if (unleashed2_mode) {
-			file->writeNull(24);
+			file->writeNull(20);
 		}
 
 		// Write Submesh slots
@@ -265,6 +273,14 @@ namespace LibGens {
 
 	bool Mesh::hasExtra() {
 		return (extra.size() > 0);
+	}
+	
+	string Mesh::getName() {
+		return name;
+	}
+	
+	void Mesh::setName(string v) {
+		name = v;
 	}
 
 	void Mesh::setWaterSlotString(string v) {

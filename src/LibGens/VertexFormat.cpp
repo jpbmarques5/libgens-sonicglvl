@@ -71,12 +71,12 @@ namespace LibGens {
 			VertexFormatElement binormal(36, VECTOR3, BINORMAL, 0);
 			VertexFormatElement uv_1(48, VECTOR2, UV, 0);
 			VertexFormatElement uv_2(56, VECTOR2, UV, 1);
-			VertexFormatElement uv_3(64, VECTOR2, UV, 1);
-			VertexFormatElement uv_4(72, VECTOR2, UV, 1);
+			VertexFormatElement uv_3(64, VECTOR2, UV, 2);
+			VertexFormatElement uv_4(72, VECTOR2, UV, 3);
 			VertexFormatElement color(80, VECTOR4, RGBA, 0);
 			VertexFormatElement bone_indices(96, INDICES, BONE_INDICES, 0);
 			VertexFormatElement bone_weights(100, VECTOR4_CHAR, BONE_WEIGHTS, 0);
-			
+
 			addElement(position);
 			addElement(normal);
 			addElement(binormal);
@@ -99,7 +99,7 @@ namespace LibGens {
 			VertexFormatElement uv_1(48, VECTOR2, UV, 0);
 			VertexFormatElement uv_2(56, VECTOR2, UV, 1);
 			VertexFormatElement color(64, VECTOR4, RGBA, 0);
-			
+
 			addElement(position);
 			addElement(normal);
 			addElement(binormal);
@@ -121,7 +121,6 @@ namespace LibGens {
 		elements.push_back(vfe);
 	}
 
-	
 	void VertexFormat::read(File *file) {
 		size_t header_address=file->getCurrentAddress();
 
@@ -150,7 +149,6 @@ namespace LibGens {
 			elements.push_back(vfe);
 		}
 	}
-
 	
 	void VertexFormat::write(File *file) {
 		size_t header_address=file->getCurrentAddress();

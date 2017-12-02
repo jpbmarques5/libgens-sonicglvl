@@ -36,9 +36,9 @@ namespace LibGens {
 		int lFileFormat = sdk_manager->GetIOPluginRegistry()->GetNativeWriterFormat();
 
 		FbxExporter* lExporter = FbxExporter::Create(sdk_manager, "");
-		bool lExportStatus=lExporter->Initialize(filename.c_str(), lFileFormat, sdk_manager->GetIOSettings());
+		bool lExportStatus = lExporter->Initialize(filename.c_str(), lFileFormat, sdk_manager->GetIOSettings());
 
-		if(!lExportStatus) {
+		if (!lExportStatus) {
 			printf("Call to FbxExporter::Initialize() failed.\n");
 			printf("Error returned: %s\n\n", lExporter->GetStatus().GetErrorString());
 			return;
@@ -53,12 +53,11 @@ namespace LibGens {
 		lExporter->Destroy();
 	}
 
-
 	FbxSurfacePhong *FBX::addMaterial(Material *material) {
 		FbxSurfacePhong* lMaterial = NULL;
 
 		FbxString lMaterialName = material->getName().c_str();
-		FbxString lShadingName  = "Phong";
+		FbxString lShadingName = "Phong";
 		FbxDouble3 lBlack(0.0, 0.0, 0.0);
 		FbxDouble3 lDiffuseColor(1.0, 1.0, 1.0);
 
@@ -92,7 +91,7 @@ namespace LibGens {
 		}
 
 		if (texture_unit) {
-			FbxFileTexture* lTexture = FbxFileTexture::Create(scene, (texture_unit->getTexset()+"_ambient").c_str());
+			FbxFileTexture* lTexture = FbxFileTexture::Create(scene, (texture_unit->getTexset() + "_ambient").c_str());
 			lTexture->SetFileName((material->getFolder() + texture_unit->getName() + LIBGENS_TEXTURE_FILE_EXTENSION).c_str());
 			lTexture->SetTextureUse(FbxTexture::eStandard);
 			lTexture->SetMappingType(FbxTexture::eUV);
@@ -108,39 +107,34 @@ namespace LibGens {
 		return lMaterial;
 	}
 
-	void FBX::addBone(FbxNode *parentNode, Matrix4 parentTransformation, unsigned int parentIndex, vector<FbxNode *> &skeletonBones, vector<Bone *> &bones)
-	{
-		for (int i = 0; i < bones.size(); i++)
-		{
+	void FBX::addBone(FbxNode *parent_node, Matrix4 parent_transformation, unsigned int parent_index, vector<FbxNode *> &skeleton_bones, vector<Bone *> &bones) {
+		for (unsigned int i = 0; i < bones.size(); i++) {
 			Bone *bone = bones[i];
-			unsigned int pIndex = bone->getParentIndex();
+			unsigned int parent_index_p = bone->getParentIndex();
 			Matrix4 matrix = bone->getMatrix();
 			string name = bone->getName();
 
-			if (pIndex != parentIndex)
-			{
+			if (parent_index_p != parent_index) {
 				continue;
 			}
 
 			FbxSkeleton *lSkeleton = FbxSkeleton::Create(scene, name.c_str());
-			if (parentIndex == -1)
-			{
+			if (parent_index == -1) {
 				lSkeleton->SetSkeletonType(FbxSkeleton::eRoot);
 			}
 
-			else
-			{
+			else {
 				lSkeleton->SetSkeletonType(FbxSkeleton::eLimbNode);
 			}
 
 			FbxNode *lBoneNode = FbxNode::Create(scene, name.c_str());
 			lBoneNode->SetNodeAttribute(lSkeleton);
 
-			Matrix4 localMatrix = parentTransformation * matrix.inverse();
+			Matrix4 local_matrix = parent_transformation * matrix.inverse();
 
 			Vector3 pos, sca;
 			Quaternion ori;
-			localMatrix.decomposition(pos, sca, ori);
+			local_matrix.decomposition(pos, sca, ori);
 
 			lBoneNode->LclTranslation.Set(FbxVector4(pos.x, pos.y, pos.z));
 
@@ -149,30 +143,29 @@ namespace LibGens {
 
 			lBoneNode->LclRotation.Set(eu);
 
-			skeletonBones[i] = lBoneNode;
-			parentNode->AddChild(lBoneNode);
+			skeleton_bones[i] = lBoneNode;
+			parent_node->AddChild(lBoneNode);
 
-			addBone(lBoneNode, matrix, i, skeletonBones, bones);
+			addBone(lBoneNode, matrix, i, skeleton_bones, bones);
 		}
 	}
 
-	vector<FbxNode *> FBX::addSkeleton(Model *model)
-	{
-		vector<FbxNode *> skeletonBones;
+	vector<FbxNode *> FBX::addSkeleton(Model *model) {
+		vector<FbxNode *> skeleton_bones;
 		vector<Bone *> bones = model->getBones();
 
-		skeletonBones.resize(bones.size(), NULL);
-		addBone(scene->GetRootNode(), Matrix4(), -1, skeletonBones, bones);
-		return skeletonBones;
+		skeleton_bones.resize(bones.size(), NULL);
+		addBone(scene->GetRootNode(), Matrix4(), -1, skeleton_bones, bones);
+		return skeleton_bones;
 	}
 
 	FbxNode *FBX::addHavokBone(FbxNode *parent_node, unsigned int parent_index, vector<FbxNode *> &skeleton_bones, hkaSkeleton *skeleton) {
-		FbxNode *root_bone=NULL;
-		for (int b=0; b<skeleton->m_bones.getSize(); b++) {
-			hkaBone &bone           = skeleton->m_bones[b];
-			string bone_name        = bone.m_name;
+		FbxNode *root_bone = NULL;
+		for (int b = 0; b < skeleton->m_bones.getSize(); b++) {
+			hkaBone &bone = skeleton->m_bones[b];
+			string bone_name = bone.m_name;
 			size_t model_bone_index = 0;
-			bool found=false;
+			bool found = false;
 
 			if (skeleton->m_parentIndices[b] != parent_index) {
 				continue;
@@ -202,26 +195,26 @@ namespace LibGens {
 		return root_bone;
 	}
 
-	
+
 	// Create a skeleton with 2 segments.
 	FbxNode *FBX::addHavokSkeleton(vector<FbxNode *> &skeleton_bones, hkaSkeleton *skeleton) {
 		FbxNode *lRootNode = scene->GetRootNode();
-		FbxNode *skeleton_root_bone=addHavokBone(lRootNode, -1, skeleton_bones, skeleton);
+		FbxNode *skeleton_root_bone = addHavokBone(lRootNode, -1, skeleton_bones, skeleton);
 		return skeleton_root_bone;
 	}
 
-	void FBX::skinModelToSkeleton(Model *model, FbxMesh *model_mesh, vector<FbxNode *> &skeleton_bones, FbxAMatrix lSkinMatrix) {
+	void FBX::skinModelToSkeleton(Model *model, Mesh *mesh, FbxMesh *model_mesh, vector<FbxNode *> &skeleton_bones, FbxAMatrix lSkinMatrix) {
 		FbxSkin* lSkin = FbxSkin::Create(scene, "");
-		vector<Bone *> model_bones=model->getBones();
-		list<Vertex *> vertices=model->getVertexList();
+		vector<Bone *> model_bones = model->getBones();
+		list<Vertex *> vertices = mesh->getVertexList();
 
-		for (size_t i=0; i<skeleton_bones.size(); i++) {
+		for (size_t i = 0; i < skeleton_bones.size(); i++) {
 			// Search for matching bone in the model, dump skinning cluster if found
 			string bone_name = skeleton_bones[i]->GetName();
-			bool found=false;
+			bool found = false;
 			size_t model_bone_index;
 
-			for (model_bone_index = 0; model_bone_index<model_bones.size(); model_bone_index++) {
+			for (model_bone_index = 0; model_bone_index < model_bones.size(); model_bone_index++) {
 				if (model_bones[model_bone_index]->getName() == bone_name) {
 					found = true;
 					break;
@@ -234,15 +227,15 @@ namespace LibGens {
 				lCluster->SetLink(skeleton_bones[i]);
 				lCluster->SetLinkMode(FbxCluster::eTotalOne);
 
-				unsigned int index=0;
-				for (list<Vertex *>::iterator it=vertices.begin(); it!=vertices.end(); it++) {
-					for (size_t j=0; j<4; j++) {
+				unsigned int index = 0;
+				for (list<Vertex *>::iterator it = vertices.begin(); it != vertices.end(); it++) {
+					for (size_t j = 0; j < 4; j++) {
 						unsigned char bone_index = (*it)->getBoneIndex(j);
 						if (bone_index != 0xFF) {
 							unsigned char bone_weight = (*it)->getBoneWeight(j);
 							float bone_weight_f = (float)bone_weight / 255.0;
 
-							unsigned char real_bone_index=(*it)->getParent()->getBone(bone_index);
+							unsigned char real_bone_index = (*it)->getParent()->getBone(bone_index);
 							if (real_bone_index == model_bone_index) {
 								lCluster->AddControlPointIndex(index, bone_weight_f);
 							}
@@ -263,9 +256,9 @@ namespace LibGens {
 
 
 	void FBX::addHavokAnimation(vector<FbxNode *> &skeleton_bones, hkaSkeleton *skeleton, hkaAnimationBinding *animation_binding, hkaAnimation *animation) {
-		float duration       = animation->m_duration;
+		float duration = animation->m_duration;
 		float frame_duration = 1.0 / 30.0;
-		float current_frame  = 0.0;
+		float current_frame = 0.0;
 		bool first_frame = true;
 
 		if (frame_duration <= 0.0) return;
@@ -276,12 +269,12 @@ namespace LibGens {
 
 		// Create a new animated skeleton
 		hkaAnimatedSkeleton* animated_skeleton = new hkaAnimatedSkeleton(skeleton);
-		animated_skeleton->addAnimationControl( ac );
+		animated_skeleton->addAnimationControl(ac);
 		ac->removeReference();
 
 		FbxAnimStack* lAnimStack = FbxAnimStack::Create(scene, "");
-        FbxAnimLayer* lAnimLayer = FbxAnimLayer::Create(scene, "");
-        lAnimStack->AddMember(lAnimLayer);
+		FbxAnimLayer* lAnimLayer = FbxAnimLayer::Create(scene, "");
+		lAnimStack->AddMember(lAnimLayer);
 
 		while (true) {
 			if (!first_frame) current_frame += frame_duration;
@@ -297,16 +290,16 @@ namespace LibGens {
 			hkaPose pose(animated_skeleton->getSkeleton());
 			animated_skeleton->sampleAndCombineAnimations(pose.accessUnsyncedPoseLocalSpace().begin(), pose.getFloatSlotValues().begin());
 
-			for (int i=0; i<skeleton->m_bones.getSize(); i++) {
-				string bone_name= ToString(skeleton->m_bones[i].m_name);
+			for (int i = 0; i < skeleton->m_bones.getSize(); i++) {
+				string bone_name = ToString(skeleton->m_bones[i].m_name);
 
-				for (size_t bone_index=0; bone_index<skeleton_bones.size(); bone_index++) {
+				for (size_t bone_index = 0; bone_index < skeleton_bones.size(); bone_index++) {
 					if (bone_name == skeleton_bones[bone_index]->GetName()) {
 						hkQsTransform transform_local = pose.getBoneLocalSpace(i);
 						hkQsTransform transform_model = hkQsTransform::IDENTITY;
 
 						hkInt16 parent_index = skeleton->m_parentIndices[i];
-						if ((parent_index >= 0) && (parent_index < (int) skeleton_bones.size())) {
+						if ((parent_index >= 0) && (parent_index < (int)skeleton_bones.size())) {
 							transform_model = pose.getBoneModelSpace(parent_index);
 						}
 
@@ -359,7 +352,7 @@ namespace LibGens {
 							curveTZ->KeyModifyEnd();
 						}
 
-						
+
 						if (curveSX) {
 							curveSX->KeyModifyBegin();
 							int lKeyIndex = curveSX->KeyAdd(lTime);
@@ -383,13 +376,13 @@ namespace LibGens {
 							curveSZ->KeySetInterpolation(lKeyIndex, FbxAnimCurveDef::eInterpolationLinear);
 							curveSZ->KeyModifyEnd();
 						}
-						
-						
+
+
 
 						FbxQuaternion lcl_quat(tr(0), tr(1), tr(2), tr(3));
 						FbxVector4 lcl_rotation;
 						lcl_rotation.SetXYZ(lcl_quat);
-						
+
 						if (curveRX) {
 							curveRX->KeyModifyBegin();
 							int lKeyIndex = curveRX->KeyAdd(lTime);
@@ -413,7 +406,7 @@ namespace LibGens {
 							curveRZ->KeySetInterpolation(lKeyIndex, FbxAnimCurveDef::eInterpolationLinear);
 							curveRZ->KeyModifyEnd();
 						}
-							
+
 
 						break;
 					}
@@ -437,7 +430,7 @@ namespace LibGens {
 		string model_name = "Dummy";
 
 		if (model) {
-			model_name=model->getName();
+			model_name = model->getName();
 		}
 
 		return addNamedNode(model_name, model, skeleton, animation, transform_matrix);
@@ -447,174 +440,189 @@ namespace LibGens {
 		FbxNode* lMeshNode = NULL;
 		FbxMesh* lMesh = NULL;
 
+		vector<FbxNode *> nodes;
+		vector<Mesh *> meshes;
+
+		Vector3 position;
+		Vector3 scale;
+		Quaternion orientation;
+		transform_matrix.decomposition(position, scale, orientation);
+
 		if (model) {
 			models.push_back(model);
+			meshes = model->getMeshes();
 
-			lMeshNode = FbxNode::Create(scene, name.c_str());
-			lMesh = FbxMesh::Create(scene, (name + "_mesh").c_str());
+			unsigned int mesh_counter = 0;
+			for (vector<Mesh *>::iterator it_m = meshes.begin(); it_m != meshes.end(); it_m++) {
+				string mesh_name = (*it_m)->getName();
 
-			// Create Layer 0
-			FbxLayer* lLayer = lMesh->GetLayer(0);
-			if (lLayer == NULL)
-			{
-				lMesh->CreateLayer();
-				lLayer = lMesh->GetLayer(0);
-			}
-
-			// Build Transform
-			Vector3 position;
-			Vector3 scale;
-			Quaternion orientation;
-			transform_matrix.decomposition(position, scale, orientation);
-
-			lMeshNode->LclTranslation.Set(FbxVector4(position.x, position.y, position.z));
-			lMeshNode->LclScaling.Set(FbxVector4(scale.x, scale.y, scale.z));
-
-			FbxQuaternion lcl_quat(orientation.x, orientation.y, orientation.z, orientation.w);
-			FbxVector4 lcl_rotation;
-			lcl_rotation.SetXYZ(lcl_quat);
-			lMeshNode->LclRotation.Set(lcl_rotation);
-			
-			// Build Submeshes
-			list<Vertex *> model_vertices;
-			list<unsigned int> model_faces;
-			list<string> material_names;
-			vector<unsigned int> material_mappings;
-			model->getTotalData(model_vertices, model_faces, material_names, material_mappings);
-
-			lMesh->InitControlPoints(model_vertices.size());
-			FbxVector4* lControlPoints = lMesh->GetControlPoints();
-
-			FbxLayerElementNormal* lLayerElementNormal = FbxLayerElementNormal::Create(lMesh, "");
-			lLayerElementNormal->SetMappingMode(FbxLayerElement::eByControlPoint);
-			lLayerElementNormal->SetReferenceMode(FbxLayerElement::eDirect);
-			lLayer->SetNormals(lLayerElementNormal);
-
-			FbxLayerElementBinormal* lLayerElementBinormal = FbxLayerElementBinormal::Create(lMesh, "");
-			lLayerElementBinormal->SetMappingMode(FbxGeometryElement::eByControlPoint);
-			lLayerElementBinormal->SetReferenceMode(FbxGeometryElement::eDirect);
-			lLayer->SetBinormals(lLayerElementBinormal);
-
-			FbxLayerElementTangent* lLayerElementTangent = FbxLayerElementTangent::Create(lMesh, "");
-			lLayerElementTangent->SetMappingMode(FbxGeometryElement::eByControlPoint);
-			lLayerElementTangent->SetReferenceMode(FbxGeometryElement::eDirect);
-			lLayer->SetTangents(lLayerElementTangent);
-
-			FbxLayerElementVertexColor* lLayerElementVertexColor = FbxLayerElementVertexColor::Create(lMesh, "");
-			lLayerElementVertexColor->SetMappingMode(FbxGeometryElement::eByControlPoint);
-			lLayerElementVertexColor->SetReferenceMode(FbxGeometryElement::eDirect);
-			lLayer->SetVertexColors(lLayerElementVertexColor);
-
-			FbxLayerElementUV* lLayerUVElement = FbxLayerElementUV::Create(lMesh, "UVChannel_1");
-			lLayerUVElement->SetMappingMode(FbxGeometryElement::eByControlPoint);
-			lLayerUVElement->SetReferenceMode(FbxGeometryElement::eDirect);
-			lLayer->SetUVs(lLayerUVElement, FbxLayerElement::eTextureDiffuse);
-
-			FbxLayerElementUV* lLayerUV2Element = FbxLayerElementUV::Create(lMesh, "UVChannel_2");
-			lLayerUV2Element->SetMappingMode(FbxGeometryElement::eByControlPoint);
-			lLayerUV2Element->SetReferenceMode(FbxGeometryElement::eDirect);
-			lLayer->SetUVs(lLayerUV2Element, FbxLayerElement::eTextureAmbient);
-			
-			// Create Vertices
-			unsigned int index=0;
-			for (list<Vertex *>::iterator it=model_vertices.begin(); it!=model_vertices.end(); it++) {
-				Vector3 position = (*it)->getPosition();
-				Vector3 normal = (*it)->getNormal();
-				Vector3 binormal = (*it)->getBinormal();
-				Vector3 tangent = (*it)->getTangent();
-				Vector2 uv_0 = (*it)->getUV(0);
-				Vector2 uv_1 = (*it)->getUV(1);
-				Color   color = (*it)->getColor();
-
-				lControlPoints[index] = FbxVector4(position.x, position.y, position.z);
-				lLayerElementNormal->GetDirectArray().Add(FbxVector4(normal.x, normal.y, normal.z));
-				lLayerElementBinormal->GetDirectArray().Add(FbxVector4(binormal.x, binormal.y, binormal.z));
-				lLayerElementTangent->GetDirectArray().Add(FbxVector4(tangent.x, tangent.y, tangent.z));
-				lLayerUVElement->GetDirectArray().Add(FbxVector2(uv_0.x, 1.0-uv_0.y));
-				lLayerUV2Element->GetDirectArray().Add(FbxVector2(uv_1.x, 1.0-uv_1.y));
-				lLayerElementVertexColor->GetDirectArray().Add(FbxColor(color.r, color.g, color.b, color.a));
-				index++;
-			}
-
-			// Create Faces
-			unsigned int face_index=0;
-			unsigned int global_index=0;
-			for (list<unsigned int>::iterator it=model_faces.begin(); it!=model_faces.end(); it++) {
-				if (face_index == 0) {
-					lMesh->BeginPolygon(-1, -1, -1, false);
+				if (!mesh_name.size()) {
+					mesh_name = name + (it_m != meshes.begin() ? "_" + ToString(mesh_counter++) : "");
 				}
 
-				lMesh->AddPolygon((*it));
+				lMeshNode = FbxNode::Create(scene, mesh_name.c_str());
+				lMesh = FbxMesh::Create(scene, (mesh_name + "_mesh").c_str());
 
-				face_index++;
-				if (face_index >= 3) {
-					lMesh->EndPolygon();
-					face_index = 0;
+				// Create Layer 0
+				FbxLayer* lLayer = lMesh->GetLayer(0);
+				if (lLayer == NULL) {
+					lMesh->CreateLayer();
+					lLayer = lMesh->GetLayer(0);
 				}
 
-				global_index++;
-			}
+				lMeshNode->LclTranslation.Set(FbxVector4(position.x, position.y, position.z));
+				lMeshNode->LclScaling.Set(FbxVector4(scale.x, scale.y, scale.z));
 
-			// Set material indices
-			FbxLayerElementMaterial* lMaterialLayer = FbxLayerElementMaterial::Create(lMesh, "MaterialIndices");
-			lMaterialLayer->SetMappingMode(FbxLayerElement::eByPolygon);
-			lMaterialLayer->SetReferenceMode(FbxLayerElement::eIndexToDirect);
-			lLayer->SetMaterials(lMaterialLayer);
+				FbxQuaternion lcl_quat(orientation.x, orientation.y, orientation.z, orientation.w);
+				FbxVector4 lcl_rotation;
+				lcl_rotation.SetXYZ(lcl_quat);
+				lMeshNode->LclRotation.Set(lcl_rotation);
 
-			for (size_t i = 0; i < model_faces.size()/3; i++) {
-				lMaterialLayer->GetIndexArray().Add(material_mappings[i*3]);
-			}
+				// Build Submeshes
+				list<Vertex *> model_vertices = (*it_m)->getVertexList();
+				list<unsigned int> model_faces = (*it_m)->getFaceList();
+				list<string> material_names = (*it_m)->getMaterialNames();
+				vector<unsigned int> material_mappings = (*it_m)->getMaterialMappings(material_names);
 
-			// Add Materials
-			for (list<string>::iterator it=material_names.begin(); it!=material_names.end(); it++) {
-				if (material_library) {
-					Material *material = material_library->getMaterial(*it);
-					if (material) {
-						FbxSurfacePhong *lMaterial = material_map[material];
-						if (!lMaterial) {
-							lMaterial = addMaterial(material);
-							material_map[material] = lMaterial;
-						}
-						
-						if (lMaterial) {
-							lMeshNode->AddMaterial(lMaterial);
+				lMesh->InitControlPoints(model_vertices.size());
+				FbxVector4* lControlPoints = lMesh->GetControlPoints();
+
+				FbxLayerElementNormal* lLayerElementNormal = FbxLayerElementNormal::Create(lMesh, "");
+				lLayerElementNormal->SetMappingMode(FbxLayerElement::eByControlPoint);
+				lLayerElementNormal->SetReferenceMode(FbxLayerElement::eDirect);
+				lLayer->SetNormals(lLayerElementNormal);
+
+				FbxLayerElementBinormal* lLayerElementBinormal = FbxLayerElementBinormal::Create(lMesh, "");
+				lLayerElementBinormal->SetMappingMode(FbxGeometryElement::eByControlPoint);
+				lLayerElementBinormal->SetReferenceMode(FbxGeometryElement::eDirect);
+				lLayer->SetBinormals(lLayerElementBinormal);
+
+				FbxLayerElementTangent* lLayerElementTangent = FbxLayerElementTangent::Create(lMesh, "");
+				lLayerElementTangent->SetMappingMode(FbxGeometryElement::eByControlPoint);
+				lLayerElementTangent->SetReferenceMode(FbxGeometryElement::eDirect);
+				lLayer->SetTangents(lLayerElementTangent);
+
+				FbxLayerElementVertexColor* lLayerElementVertexColor = FbxLayerElementVertexColor::Create(lMesh, "");
+				lLayerElementVertexColor->SetMappingMode(FbxGeometryElement::eByControlPoint);
+				lLayerElementVertexColor->SetReferenceMode(FbxGeometryElement::eDirect);
+				lLayer->SetVertexColors(lLayerElementVertexColor);
+
+				FbxLayerElementUV* lLayerUVElement = FbxLayerElementUV::Create(lMesh, "UVChannel_1");
+				lLayerUVElement->SetMappingMode(FbxGeometryElement::eByControlPoint);
+				lLayerUVElement->SetReferenceMode(FbxGeometryElement::eDirect);
+				lLayer->SetUVs(lLayerUVElement, FbxLayerElement::eTextureDiffuse);
+
+				FbxLayerElementUV* lLayerUV2Element = FbxLayerElementUV::Create(lMesh, "UVChannel_2");
+				lLayerUV2Element->SetMappingMode(FbxGeometryElement::eByControlPoint);
+				lLayerUV2Element->SetReferenceMode(FbxGeometryElement::eDirect);
+				lLayer->SetUVs(lLayerUV2Element, FbxLayerElement::eTextureAmbient);
+
+				// Create Vertices
+				unsigned int index = 0;
+				for (list<Vertex *>::iterator it = model_vertices.begin(); it != model_vertices.end(); it++) {
+					Vector3 position = (*it)->getPosition();
+					Vector3 normal = (*it)->getNormal();
+					Vector3 binormal = (*it)->getBinormal();
+					Vector3 tangent = (*it)->getTangent();
+					Vector2 uv_0 = (*it)->getUV(0);
+					Vector2 uv_1 = (*it)->getUV(1);
+					Color   color = (*it)->getColor();
+
+					lControlPoints[index] = FbxVector4(position.x, position.y, position.z);
+					lLayerElementNormal->GetDirectArray().Add(FbxVector4(normal.x, normal.y, normal.z));
+					lLayerElementBinormal->GetDirectArray().Add(FbxVector4(binormal.x, binormal.y, binormal.z));
+					lLayerElementTangent->GetDirectArray().Add(FbxVector4(tangent.x, tangent.y, tangent.z));
+					lLayerUVElement->GetDirectArray().Add(FbxVector2(uv_0.x, 1.0 - uv_0.y));
+					lLayerUV2Element->GetDirectArray().Add(FbxVector2(uv_1.x, 1.0 - uv_1.y));
+					lLayerElementVertexColor->GetDirectArray().Add(FbxColor(color.r, color.g, color.b, color.a));
+					index++;
+				}
+
+				// Create Faces
+				unsigned int face_index = 0;
+				unsigned int global_index = 0;
+				for (list<unsigned int>::iterator it = model_faces.begin(); it != model_faces.end(); it++) {
+					if (face_index == 0) {
+						lMesh->BeginPolygon(-1, -1, -1, false);
+					}
+
+					lMesh->AddPolygon((*it));
+
+					face_index++;
+					if (face_index >= 3) {
+						lMesh->EndPolygon();
+						face_index = 0;
+					}
+
+					global_index++;
+				}
+
+				// Set material indices
+				FbxLayerElementMaterial* lMaterialLayer = FbxLayerElementMaterial::Create(lMesh, "MaterialIndices");
+				lMaterialLayer->SetMappingMode(FbxLayerElement::eByPolygon);
+				lMaterialLayer->SetReferenceMode(FbxLayerElement::eIndexToDirect);
+				lLayer->SetMaterials(lMaterialLayer);
+
+				for (size_t i = 0; i < model_faces.size() / 3; i++) {
+					lMaterialLayer->GetIndexArray().Add(material_mappings[i * 3]);
+				}
+
+				// Add Materials
+				for (list<string>::iterator it = material_names.begin(); it != material_names.end(); it++) {
+					if (material_library) {
+						Material *material = material_library->getMaterial(*it);
+						if (material) {
+							FbxSurfacePhong *lMaterial = material_map[material];
+							if (!lMaterial) {
+								lMaterial = addMaterial(material);
+								material_map[material] = lMaterial;
+							}
+
+							if (lMaterial) {
+								lMeshNode->AddMaterial(lMaterial);
+							}
 						}
 					}
 				}
+
+				lMeshNode->SetNodeAttribute(lMesh);
+				lMeshNode->SetShadingMode(FbxNode::eTextureShading);
+
+				FbxNode *lRootNode = scene->GetRootNode();
+				lRootNode->AddChild(lMeshNode);
+
+				nodes.push_back(lMeshNode);
 			}
-
-			lMeshNode->SetNodeAttribute(lMesh);
-			lMeshNode->SetShadingMode(FbxNode::eTextureShading);
-
-			FbxNode *lRootNode = scene->GetRootNode();
-			lRootNode->AddChild(lMeshNode);
 		}
 
 		if (skeleton) {
-			hkaSkeleton *havok_skeleton=skeleton->getSkeleton();
-			
+			hkaSkeleton *havok_skeleton = skeleton->getSkeleton();
+
 			if (havok_skeleton) {
 				vector<FbxNode *> skeleton_bones;
 				skeleton_bones.resize(havok_skeleton->m_bones.getSize(), NULL);
 
 				addHavokSkeleton(skeleton_bones, havok_skeleton);
 
-				if (lMeshNode) {
-					skinModelToSkeleton(model, lMesh, skeleton_bones, lMeshNode->EvaluateGlobalTransform());
+				for (unsigned int i = 0; i < nodes.size(); i++) {
+					skinModelToSkeleton(model, meshes[i], nodes[i]->GetMesh(), skeleton_bones, nodes[i]->EvaluateGlobalTransform());
 				}
 
 				if (animation) {
-					hkaAnimationBinding *havok_animation_binding=animation->getAnimationBinding();
-					hkaAnimation *havok_animation=animation->getAnimation();
+					hkaAnimationBinding *havok_animation_binding = animation->getAnimationBinding();
+					hkaAnimation *havok_animation = animation->getAnimation();
 					addHavokAnimation(skeleton_bones, havok_skeleton, havok_animation_binding, havok_animation);
 				}
 			}
 		}
 
-		else if (model && lMeshNode && model->getBones().size())
-		{
+		// Convert bones from model file if no skeleton file was found
+		else if (model && model->getBones().size()) {
 			vector<FbxNode *> bones = addSkeleton(model);
-			skinModelToSkeleton(model, lMesh, bones, lMeshNode->EvaluateGlobalTransform());
+
+			for (unsigned int i = 0; i < nodes.size(); i++) {
+				skinModelToSkeleton(model, meshes[i], nodes[i]->GetMesh(), bones, nodes[i]->EvaluateGlobalTransform());
+			}
 		}
 
 		return lMesh;
@@ -644,21 +652,21 @@ namespace LibGens {
 			lMesh->InitControlPoints(geometry->m_vertices.getSize());
 			FbxVector4* lControlPoints = lMesh->GetControlPoints();
 
-			int index=0;
-			for (index=0; index<geometry->m_vertices.getSize(); index++) {
-				lControlPoints[index] = FbxVector4(geometry->m_vertices[index](0), 
-												   geometry->m_vertices[index](1), 
+			int index = 0;
+			for (index = 0; index < geometry->m_vertices.getSize(); index++) {
+				lControlPoints[index] = FbxVector4(geometry->m_vertices[index](0),
+												   geometry->m_vertices[index](1),
 												   geometry->m_vertices[index](2));
 			}
 
-			for (index=0; index<geometry->m_triangles.getSize(); index++) {
+			for (index = 0; index < geometry->m_triangles.getSize(); index++) {
 				lMesh->BeginPolygon();
 				lMesh->AddPolygon(geometry->m_triangles[index].m_a);
 				lMesh->AddPolygon(geometry->m_triangles[index].m_b);
 				lMesh->AddPolygon(geometry->m_triangles[index].m_c);
 				lMesh->EndPolygon();
 			}
-		
+
 			lMeshNode->SetNodeAttribute(lMesh);
 			FbxNode *lRootNode = scene->GetRootNode();
 			lRootNode->AddChild(lMeshNode);

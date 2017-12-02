@@ -33,10 +33,19 @@ namespace LibGens {
 	class Vertex;
 	class VRMapSample;
 
+    class ModelProperty {
+    	public:
+    	    string name;
+            unsigned int value;
+            
+            ModelProperty(string name_p, unsigned int value_p);
+    };
+
 	class Model {
 		protected:
 			vector<Mesh *> meshes;
 			vector<Bone *> bones;
+			vector<ModelProperty> properties;
 			string name;
 			unsigned int model_flag;
 			string filename;
@@ -55,6 +64,7 @@ namespace LibGens {
 			void readSkeleton(File *file);
 			void writeRootNodeDynamicGenerations(File *file);
 			void writeRootNodeDynamicUnleashed2(File *file);
+			void writeRootNodeDynamicLostWorld(File *file);
 			void buildAABB();
 			AABB getAABB();
 			void setTerrainMode(bool v);
@@ -72,6 +82,8 @@ namespace LibGens {
 			void getTotalData(list<Vertex *> &vertex_list, list<unsigned int> &face_list, list<string> &material_names, vector<unsigned int> &material_mappings);
 			void createSamplePoints(list<VRMapSample *> *list, Matrix4 &matrix, Bitmap *bitmap, float unit_size=1.0f, float saturation_multiplier=1.0f, float brightness_offset=0.0f);
 			void addMesh(Mesh *mesh);
+			void addBone(Bone *bone);
+			void setProperty(string name, unsigned int value);
 			void cloneMesh(Mesh *mesh, LibGens::Matrix4 transform, float uv2_left, float uv2_right, float uv2_top, float uv2_bottom);
 			void mergeModel(Model *model, LibGens::Matrix4 transform, float uv2_left, float uv2_right, float uv2_top, float uv2_bottom);
 			unsigned int getEstimatedMemorySize();
